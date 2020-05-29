@@ -25,7 +25,8 @@ def _genyacc_impl(ctx):
             "BISON_PKGDATADIR": ctx.attr._bison_data_path,
         },
         arguments = [args],
-        inputs = [ctx.executable._m4] + ctx.files._bison_data + ctx.files.src,
+        inputs = ctx.files._bison_data + ctx.files.src,
+        tools = [ctx.executable._m4],
         outputs = outputs,
         mnemonic = "Yacc",
         progress_message = "Generating %s and %s from %s" %
