@@ -30,7 +30,7 @@ cc_library(
     hdrs = [
         "config.h",
     ],
-    include_prefix = "./",
+    include_prefix = ".",
     visibility = [":__subpackages__"],
 )
 
