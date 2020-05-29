@@ -1,11 +1,13 @@
 licenses(["notice"])  # Apache v2
 
-load("@//:lex.bzl", "genlex")
-load("@//:bison.bzl", "genyacc")
+load("@//:bazel/lex.bzl", "genlex")
+load("@//:bazel/bison.bzl", "genyacc")
 
 package(
     default_visibility = ["//visibility:public"],
 )
+
+PACKAGE_NAME = "com_github_p4lang_p4c"
 
 P4C_BUILD_DEFAULT_COPTS = [
     "-DCONFIG_PKGDATADIR=\\\"external/p4lang_p4c\\\"",
@@ -28,7 +30,7 @@ cc_library(
     hdrs = [
         "config.h",
     ],
-    includes = ["."],
+    include_prefix = "./",
     visibility = [":__subpackages__"],
 )
 
@@ -83,7 +85,6 @@ genlex(
 cc_library(
     name = "p4c_includes",
     includes = [
-        ".",
         "ir/",
         "lib/",
         "tools/ir-generator",
@@ -275,7 +276,6 @@ cc_library(
     hdrs = glob([
         "lib/*.h",
     ]),
-    includes = ["."],
     deps = [
         ":config_h",
         "@boost//:format",
