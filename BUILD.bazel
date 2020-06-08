@@ -294,9 +294,9 @@ cc_library(
         ":p4c_frontend_h",
         ":p4c_ir",
         ":p4c_toolkit",
-        "@p4lang_p4runtime//:p4info_cc_proto",
-        "@p4lang_p4runtime//:p4runtime_cc_grpc_proto",
-        "@p4lang_p4runtime//:p4types_cc_proto",
+        "@com_github_p4lang_p4runtime//:p4info_cc_proto",
+        "@com_github_p4lang_p4runtime//:p4runtime_cc_grpc",
+        "@com_github_p4lang_p4runtime//:p4types_cc_proto",
     ],
 )
 
