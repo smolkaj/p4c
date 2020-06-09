@@ -5,15 +5,6 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 def p4c_deps():
     """Loads dependencies need to compile p4c."""
-    if not native.existing_rule("bazel_skylib"):
-        http_archive(
-            name = "bazel_skylib",
-            sha256 = "97e70364e9249702246c0e9444bccdc4b847bed1eb03c5a3ece4f83dfe6abc44",
-            urls = [
-                "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz",
-                "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz",
-            ],
-        )
     if not native.existing_rule("com_github_p4lang_p4runtime"):
         native.local_repository(
             name = "com_github_p4lang_p4runtime",
