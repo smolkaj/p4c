@@ -279,7 +279,7 @@ cc_library(
     deps = [
         ":config_h",
         "@boost//:format",
-        "@p4c_gtest//:p4c_gtest_includes",
+        "@com_google_googletest//:gtest",
     ],
 )
 

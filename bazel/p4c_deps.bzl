@@ -17,6 +17,11 @@ def p4c_deps():
             remote = "https://github.com/nelhage/rules_boost",
             shallow_since = "1576879360 -0800",
         )
+    if not native.existing_rule("com_google_googletest"):
+        native.local_repository(
+            name = "com_google_googletest",
+            path = "test/frameworks/gtest",
+        )
     if not native.existing_rule("bison"):
         http_archive(
             name = "bison",
@@ -35,11 +40,3 @@ def p4c_deps():
             strip_prefix = "m4-1.4.18",
             urls = ["https://ftp.gnu.org/gnu/m4/m4-1.4.18.tar.gz"],
         )
-    http_archive(
-        name = "p4c_gtest",
-        build_file = "//:bazel/gtest.BUILD.bazel",
-        sha256 = "9dc9157a9a1551ec7a7e43daea9a694a0bb5fb8bec81235d8a1e6ef64c716dcb",
-        strip_prefix = "googletest-release-1.10.0",
-        urls = ["https://github.com/google/googletest/archive/release-1.10.0.tar.gz"],
-        workspace_file_content = """workspace(name = "my_custom_googletest")""",
-    )
