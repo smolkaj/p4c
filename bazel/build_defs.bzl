@@ -1,98 +1,100 @@
 """P4 compilation rules."""
 
-load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
-
-def _generate_bmv2_config(ctx):
-    """Preprocesses P4 sources and runs p4c on pre-processed P4 file."""
-
-    # Preprocess all files and create 'p4_preprocessed_file'
-    p4_preprocessed_file = ctx.actions.declare_file(
-        ctx.configuration.genfiles_dir.path + ctx.label.name + ".pp.p4",
-    )
-    hdr_include_str = ""
-    for hdr in ctx.files.hdrs:
-        hdr_include_str += "-I " + hdr.dirname
-    cpp_toolchain = find_cpp_toolchain(ctx)
-
-    ctx.actions.run(
-        arguments = [
-            "-E",
-            "-x",
-            "c",
-            ctx.file.src.path,
-            "-I.",
-            "-I",
-            ctx.file._model.dirname,
-            "-I",
-            ctx.file._core.dirname,
-            hdr_include_str,
-            "-o",
-            p4_preprocessed_file.path,
-        ] + ctx.attr.copts,
-        inputs = ([ctx.file.src] + ctx.files.hdrs + [ctx.file._model] +
-                  [ctx.file._core] + ctx.files.cpp),
-        outputs = [p4_preprocessed_file],
-        progress_message = "Preprocessing...",
-        executable = cpp_toolchain.compiler_executable,
-    )
-
-    # Run p4c on pre-processed P4_16 sources to obtain p4info.
-    gen_files = [
-        ctx.outputs.out_p4_info,
-        ctx.outputs.out_p4_pipeline_json,
+def _p4_library_impl(ctx):
+    p4c = ctx.executable._p4c
+    p4file = ctx.file.src
+    target = ctx.attr.target
+    cmd = [
+        p4c.path,
+        p4file.path,
+        "--std",
+        ctx.attr.std,
+        "--target",
+        (target if target else "bmv2"),
+        "--arch",
+        ctx.attr.arch,
+        ctx.attr.extra_args,
     ]
+    for dep in ctx.files._p4include + ctx.files.deps:
+        cmd.append("-I" + dep.dirname)
+    outputs = []
 
-    ctx.actions.run(
-        arguments = [
-            "--nocpp",
-            "--p4v",
-            "16",
-            "--p4runtime-format",
-            "text",
-            "--p4runtime-file",
-            gen_files[0].path,
-            "-o",
-            gen_files[1].path,
-            p4_preprocessed_file.path,
-        ],
-        inputs = [p4_preprocessed_file],
-        outputs = [gen_files[0], gen_files[1]],
-        progress_message = "Compiling P4 sources to generate bmv2 config",
-        executable = ctx.executable._p4c_bmv2,
+    if ctx.outputs.p4info_out:
+        if target != "" and target != "bmv2":
+            fail('Must use `target = "bmv2"` when specifying p4info_out.')
+        cmd += ["--p4runtime-files", ctx.outputs.p4info_out.path]
+        outputs.append(ctx.outputs.p4info_out)
+
+    if ctx.outputs.target_out:
+        if not target:
+            fail("Cannot specify target_out without specifying target explicitly.")
+        cmd += ["-o", ctx.outputs.target_out.path]
+        outputs.append(ctx.outputs.target_out)
+
+    if not outputs:
+        fail("No outputs specified. Must specify p4info_out or target_out or both.")
+
+    ctx.actions.run_shell(
+        tools = [p4c],
+        inputs = [p4file] + ctx.files._p4include,
+        outputs = outputs,
+        progress_message = "Compiling P4 program %s" % p4file.short_path,
+        command = " ".join(cmd),
+        use_default_shell_env = True,  # This is so p4c find cc.
     )
 
-    return DefaultInfo(files = depset(gen_files))
-
-#  Compiles P4_16 source into bmv2 target JSON configuration and p4info.
-p4_bmv2_config = rule(
-    implementation = _generate_bmv2_config,
-    fragments = ["cpp"],
+p4_library = rule(
+    doc = "Compiles P4 program using the p4c compiler.",
+    implementation = _p4_library_impl,
     attrs = {
-        "src": attr.label(mandatory = True, allow_single_file = True),
-        "hdrs": attr.label_list(
-            allow_files = True,
+        "src": attr.label(
+            doc = "P4 source file to pass to p4c.",
             mandatory = True,
+            allow_single_file = [".p4"],
         ),
-        "out_p4_info": attr.output(mandatory = True),
-        "out_p4_pipeline_json": attr.output(mandatory = False),
-        "copts": attr.string_list(),
-        "_model": attr.label(
-            allow_single_file = True,
+        "deps": attr.label_list(
+            doc = "Additional P4 dependencies (optional). Use for #include-ed files.",
             mandatory = False,
-            default = Label("@p4lang_p4c//:p4include/v1model.p4"),
+            allow_files = [".p4", ".h"],
+            default = [],
         ),
-        "_core": attr.label(
-            allow_single_file = True,
+        "p4info_out": attr.output(
             mandatory = False,
-            default = Label("@p4lang_p4c//:p4include/core.p4"),
+            doc = "The name of the p4info output file.",
         ),
-        "_p4c_bmv2": attr.label(
-            cfg = "target",
+        "target_out": attr.output(
+            mandatory = False,
+            doc = "The name of the target output file, passed to p4c via -o.",
+        ),
+        "target": attr.string(
+            doc = "The --target argument passed to p4c (default: bmv2).",
+            mandatory = False,
+            default = "",  # Use "" so we can recognize implicit target.
+        ),
+        "arch": attr.string(
+            doc = "The --arch argument passed to p4c (default: v1model).",
+            mandatory = False,
+            default = "v1model"
+        ),
+        "std": attr.string(
+            doc = "The --std argument passed to p4c (default: p4-16).",
+            mandatory = False,
+            default = "p4-16"
+        ),
+        "extra_args": attr.string(
+            doc = "String of additional command line arguments to pass to p4c.",
+            mandatory = False,
+            default = "",
+        ),
+        "_p4c": attr.label(
+            default = Label("@com_github_p4lang_p4c//:p4c_bmv2"),
             executable = True,
-            default = Label("@p4lang_p4c//:p4c_bmv2"),
+            cfg = "target",
         ),
-        "cpp": attr.label_list(default = [Label("@bazel_tools//tools/cpp:toolchain")]),
+        "_p4include": attr.label(
+            default = Label("@com_github_p4lang_p4c//:p4include"),
+            allow_files = [".p4", ".h"],
+        ),
         "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
     },
-    output_to_genfiles = True,
 )
