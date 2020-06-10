@@ -6,13 +6,25 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 def p4c_deps():
     """Loads dependencies need to compile p4c."""
     if not native.existing_rule("com_github_p4lang_p4runtime"):
-        http_archive(
+        # Cannot currently use local_repository due to Bazel limitation,
+        # see https://github.com/bazelbuild/bazel/issues/11573.
+        #
+        # native.local_repository(
+        #     name = "com_github_p4lang_p4runtime",
+        #     path = "@com_github_p4lang_p4c//:control-plane/p4runtime/proto",
+        # )
+        #
+        # We use git_repository as a workaround; the version used here should
+        # ideally be kept in sync with the submodule control-plane/p4runtime.
+        git_repository(
             name = "com_github_p4lang_p4runtime",
-            # TODO(smolkaj): Set this to something more permanent once
-            # https://github.com/p4lang/p4runtime/pull/297 has been merged.
-            urls = ["https://github.com/p4lang/p4runtime/archive/bazel.zip"],
-            strip_prefix = "p4runtime-bazel/proto",
-            sha256 = "69db7d93730c30aeb99da247f941ce8a80a403354e98079f5a5b9500a9a389b9",
+            remote = "https://github.com/p4lang/p4runtime",
+            commit = "776797d4bc7c2e5f1a7249f73f1c879a91688e75",
+            shallow_since = "1591811258 -0700",
+            # strip_prefix is broken; we use patch_cmds as a workaround,
+            # see https://github.com/bazelbuild/bazel/issues/10062.
+            patch_cmds = ["mv proto/* ."],
+            # strip_prefix = "proto",  # Broken.
         )
     if not native.existing_rule("com_github_nelhage_rules_boost"):
         git_repository(
@@ -22,6 +34,16 @@ def p4c_deps():
             shallow_since = "1576879360 -0800",
         )
     if not native.existing_rule("com_google_googletest"):
+        # Cannot currently use local_repository due to Bazel limitation,
+        # see https://github.com/bazelbuild/bazel/issues/11573.
+        #
+        # local_repository(
+        #     name = "com_google_googletest",
+        #     path = "@com_github_p4lang_p4c//:test/frameworks/gtest",
+        # )
+        #
+        # We use http_archive as a workaround; the version used here should
+        # ideally be kept in sync with the submodule test/frameworks/gtest.
         http_archive(
             name = "com_google_googletest",
             urls = ["https://github.com/google/googletest/archive/release-1.10.0.tar.gz"],

@@ -2,20 +2,6 @@ workspace(name = "com_github_p4lang_p4c")
 
 # -- Direct dependencies. ------------------------------------------------------
 
-# Cannot currently put this in `p4c_deps` as it requires relative path;
-# see https://github.com/bazelbuild/bazel/issues/11573.
-local_repository(
-    name = "com_github_p4lang_p4runtime",
-    path = "control-plane/p4runtime/proto",
-)
-
-# Cannot currently put this in `p4c_deps` as it requires relative path;
-# see https://github.com/bazelbuild/bazel/issues/11573.
-local_repository(
-    name = "com_google_googletest",
-    path = "test/frameworks/gtest",
-)
-
 load("//:bazel/p4c_deps.bzl", "p4c_deps")
 
 p4c_deps()
