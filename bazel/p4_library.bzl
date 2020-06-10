@@ -1,11 +1,11 @@
-"""P4 compilation rules."""
+"""P4 compilation rule."""
 
 def _p4_library_impl(ctx):
     p4c = ctx.executable._p4c
     p4file = ctx.file.src
+    p4deps = ctx.files._p4include + ctx.files.deps
     target = ctx.attr.target
-    cmd = [
-        p4c.path,
+    args = [
         p4file.path,
         "--std",
         ctx.attr.std,
@@ -13,34 +13,36 @@ def _p4_library_impl(ctx):
         (target if target else "bmv2"),
         "--arch",
         ctx.attr.arch,
-        ctx.attr.extra_args,
     ]
-    for dep in ctx.files._p4include + ctx.files.deps:
-        cmd.append("-I" + dep.dirname)
+    if ctx.attr.extra_args: args.append(ctx.attr.extra_args)
+
+    include_dirs = { d.dirname : 0 for d in p4deps }  # Use dict to express set.
+    args += [("-I" + dir) for dir in include_dirs.keys()]
+
     outputs = []
 
     if ctx.outputs.p4info_out:
         if target != "" and target != "bmv2":
             fail('Must use `target = "bmv2"` when specifying p4info_out.')
-        cmd += ["--p4runtime-files", ctx.outputs.p4info_out.path]
+        args += ["--p4runtime-files", ctx.outputs.p4info_out.path]
         outputs.append(ctx.outputs.p4info_out)
 
     if ctx.outputs.target_out:
         if not target:
             fail("Cannot specify target_out without specifying target explicitly.")
-        cmd += ["-o", ctx.outputs.target_out.path]
+        args += ["-o", ctx.outputs.target_out.path]
         outputs.append(ctx.outputs.target_out)
 
     if not outputs:
         fail("No outputs specified. Must specify p4info_out or target_out or both.")
 
-    ctx.actions.run_shell(
-        tools = [p4c],
-        inputs = [p4file] + ctx.files._p4include,
+    ctx.actions.run(
+        executable = p4c,
+        arguments = args,
+        inputs = p4deps + [p4file],
         outputs = outputs,
         progress_message = "Compiling P4 program %s" % p4file.short_path,
-        command = " ".join(cmd),
-        use_default_shell_env = True,  # This is so p4c find cc.
+        use_default_shell_env = True,  # This is so p4c finds cc.
     )
 
 p4_library = rule(

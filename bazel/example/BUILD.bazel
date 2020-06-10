@@ -1,4 +1,4 @@
-load("@com_github_p4lang_p4c//:bazel/build_defs.bzl", "p4_library")
+load("@com_github_p4lang_p4c//:bazel/p4_library.bzl", "p4_library")
 
 p4_library(
   name = "program",
