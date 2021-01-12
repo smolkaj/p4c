@@ -13,13 +13,7 @@ def p4c_deps():
         native.new_local_repository(
             name = "com_github_p4lang_p4c_extension",
             path = ".",
-            build_file_content = """
-filegroup(
-    name = "ir_extensions",
-    srcs = [],
-    visibility = ["//visibility:public"],
-)
-            """,
+            build_file = "@//:bazel/BUILD.extension.bazel",
         )
     if not native.existing_rule("com_github_nelhage_rules_boost"):
         git_repository(
