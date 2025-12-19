@@ -99,14 +99,6 @@ filegroup(
             sha256 = "e3aaefde68b839299cbc988178529535e66048398f7d083b40c69fe0da55f8b7",
             build_file = "@//:bazel/BUILD.z3.bazel",
         )
-    if not native.existing_rule("com_github_pantor_inja"):
-        http_archive(
-            name = "com_github_pantor_inja",
-            url = "https://github.com/pantor/inja/archive/refs/tags/v3.4.0.zip",
-            strip_prefix = "inja-3.4.0/single_include",
-            sha256 = "4ad04d380b8377874c7a097a662c1f67f40da5fb7d3abc3851544f59c3613a20",
-            build_file = "@//:bazel/BUILD.inja.bazel",
-        )
     if not native.existing_rule("nlohmann_json"):
         http_archive(
             name = "nlohmann_json",

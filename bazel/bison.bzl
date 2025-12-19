@@ -1,19 +1,22 @@
 """Build rule for generating C or C++ sources with Bison."""
 
 def _genyacc_impl(ctx):
-    """Implementation for genyacc rule.
+    """Implementation for genyacc rule."""
 
-    Expects to find bison binary on the PATH.
-    """
+    bison_toolchain = ctx.toolchains["@rules_bison//bison:toolchain_type"]
+    bison_info = bison_toolchain.bison_toolchain
 
     # Argument list
-    args = []
-    args.append("--defines=%s" % ctx.outputs.header_out.path)
-    args.append("--output-file=%s" % ctx.outputs.source_out.path)
+    args = ctx.actions.args()
+    args.add("--defines=%s" % ctx.outputs.header_out.path)
+    args.add("--output-file=%s" % ctx.outputs.source_out.path)
     if ctx.attr.prefix:
-        args.append("--name-prefix=%s" % ctx.attr.prefix)
-    args += [ctx.expand_location(opt) for opt in ctx.attr.extra_options]
-    args.append(ctx.file.src.path)
+        args.add("--name-prefix=%s" % ctx.attr.prefix)
+
+    for opt in ctx.attr.extra_options:
+        args.add(ctx.expand_location(opt))
+
+    args.add(ctx.file.src.path)
 
     # Output files
     outputs = ctx.outputs.extra_outs + [
@@ -21,9 +24,9 @@ def _genyacc_impl(ctx):
         ctx.outputs.source_out,
     ]
 
-    ctx.actions.run_shell(
-        use_default_shell_env = True,
-        command = "bison " + " ".join(args),
+    ctx.actions.run(
+        executable = bison_info.bison_tool,
+        arguments = [args],
         inputs = ctx.files.src,
         outputs = outputs,
         mnemonic = "Yacc",
@@ -33,6 +36,7 @@ def _genyacc_impl(ctx):
                                ctx.outputs.header_out.short_path,
                                ctx.file.src.short_path,
                            ),
+        env = bison_info.bison_env,
     )
 
 genyacc = rule(
@@ -61,4 +65,5 @@ genyacc = rule(
                   "subject to $(location ...) expansion.",
         ),
     },
+    toolchains = ["@rules_bison//bison:toolchain_type"],
 )
