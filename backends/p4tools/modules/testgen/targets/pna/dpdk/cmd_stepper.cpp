@@ -50,8 +50,8 @@ void PnaDpdkCmdStepper::initializeTargetEnvironment(ExecutionState &nextState) c
         blockIdx++;
     }
     const auto *thirtytwoBitType = IR::Type_Bits::get(32);
-    nextState.set(&PnaConstants::DROP_VAR, IR::BoolLiteral::get(false));
-    // PNA implicitly sets the output port to 0.
+    nextState.set(&PnaConstants::DROP_VAR, IR::BoolLiteral::get(true));
+    // PNA drops by default — send_to_port() must be called to forward.
     nextState.set(&PnaConstants::OUTPUT_PORT_VAR, IR::Constant::get(thirtytwoBitType, 0));
     // Initialize the direction metadata variables.
     nextState.set(
